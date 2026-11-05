@@ -1,0 +1,264 @@
+@import 'tailwindcss';
+
+@source '../views';
+@source '../js';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Sidebar desktop yang diciutkan; status disimpan di <html data-sidebar="collapsed">. */
+@custom-variant sidebar-collapsed (&:where([data-sidebar='collapsed'] *));
+
+@theme {
+  /* Font di-host sendiri lewat @fonts (vite.config.js) dan mengisi --font-jakarta. */
+  --font-sans: var(--font-jakarta, ui-sans-serif), ui-sans-serif, system-ui, sans-serif;
+
+  --color-black: #101828;
+
+  /*
+    Brand NgajiKu: emerald, selaras dengan halaman login.
+    brand-500 sengaja digeser ke emerald-700 agar teks putih di atasnya lolos WCAG AA (5.48:1).
+  */
+  --color-brand-25: #f3fbf7;
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-300: #6ee7b7;
+  --color-brand-400: #34d399;
+  --color-brand-500: #047857;
+  --color-brand-600: #065f46;
+  --color-brand-700: #064e3b;
+  --color-brand-800: #053d2f;
+  --color-brand-900: #022c22;
+  --color-brand-950: #011a14;
+
+  /* Aksen emas: hanya untuk ornamen dan penekanan, bukan tombol. */
+  --color-gold-100: #fef3c7;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #fcd34d;
+  --color-gold-500: #d4a017;
+
+  --color-gray-25: #fcfcfd;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f2f4f7;
+  --color-gray-200: #e4e7ec;
+  --color-gray-300: #d0d5dd;
+  --color-gray-400: #98a2b3;
+  --color-gray-500: #667085;
+  --color-gray-600: #475467;
+  --color-gray-700: #344054;
+  --color-gray-800: #1d2939;
+  --color-gray-900: #101828;
+  --color-gray-950: #0c111d;
+
+  --color-success-50: #ecfdf3;
+  --color-success-100: #d1fadf;
+  --color-success-200: #a6f4c5;
+  --color-success-300: #6ce9a6;
+  --color-success-400: #32d583;
+  --color-success-500: #12b76a;
+  --color-success-600: #039855;
+  --color-success-700: #027a48;
+  --color-success-800: #05603a;
+
+  --color-error-50: #fef3f2;
+  --color-error-100: #fee4e2;
+  --color-error-200: #fecdca;
+  --color-error-300: #fda29b;
+  --color-error-400: #f97066;
+  --color-error-500: #f04438;
+  --color-error-600: #d92d20;
+  --color-error-700: #b42318;
+  --color-error-800: #912018;
+
+  --color-warning-50: #fffaeb;
+  --color-warning-100: #fef0c7;
+  --color-warning-200: #fedf89;
+  --color-warning-300: #fec84b;
+  --color-warning-400: #fdb022;
+  --color-warning-500: #f79009;
+  --color-warning-600: #dc6803;
+  --color-warning-700: #b54708;
+  --color-warning-800: #93370d;
+
+  /* Animasi halaman auth — set jeda bertahap lewat style="--delay: 120ms" */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-fade-up: fade-up 0.7s var(--ease-out-expo) var(--delay, 0ms) both;
+  --animate-fade-in: fade-in 0.9s ease-out var(--delay, 0ms) both;
+  --animate-scale-in: scale-in 0.6s var(--ease-out-expo) var(--delay, 0ms) both;
+  --animate-shake: shake 0.4s ease-in-out both;
+  --animate-drift: drift 18s ease-in-out infinite alternate;
+  --animate-pop-in: pop-in 0.18s var(--ease-out-expo) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    20%, 60% {
+      transform: translateX(-6px);
+    }
+    40%, 80% {
+      transform: translateX(6px);
+    }
+  }
+
+  @keyframes drift {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(40px, -30px, 0) scale(1.1);
+    }
+  }
+}
+
+/*
+  Token semantik: dipakai komponen agar mode terang/gelap cukup diatur di satu tempat.
+  Semua pasangan teks sudah dicek >= 4.5:1, batas input >= 3:1.
+*/
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+}
+
+:root {
+  /* Tinggi navigasi bawah mengambang (ponsel) + jaraknya dari tepi layar. */
+  --bottom-nav-offset: max(0.75rem, env(safe-area-inset-bottom));
+  --bottom-nav-space: calc(4rem + var(--bottom-nav-offset) + 0.5rem);
+
+  --canvas: #f7f9f8;
+  --surface: #ffffff;
+  --surface-muted: #f2f5f4;
+  --line: #e4e7ec;
+  --line-strong: #868fa0;
+  --fg: #101828;
+  --fg-muted: #475467;
+  --fg-subtle: #667085;
+}
+
+.dark {
+  --canvas: #0b1017;
+  --surface: #121a24;
+  --surface-muted: #18222f;
+  --line: #222d3b;
+  --line-strong: #5f6b7e;
+  --fg: #f2f4f7;
+  --fg-muted: #a4adbd;
+  --fg-subtle: #8d97a8;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-line, currentColor);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-fg antialiased;
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* Penanda fokus keyboard global; elemen dengan kelas outline-none memakai ring sendiri. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+
+  .dark :focus-visible {
+    outline-color: var(--color-brand-400);
+  }
+
+  /* Di atas latar emerald gelap (sidebar, banner) outline emerald tidak terlihat → pakai emas. */
+  .on-brand :focus-visible {
+    outline-color: var(--color-gold-300);
+  }
+
+  dialog::backdrop {
+    background-color: rgb(12 17 29 / 0.55);
+    backdrop-filter: blur(2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Input, select, dan textarea. Tinggi 44px di layar sentuh, 40px di desktop. */
+@utility form-control {
+  @apply block h-11 w-full rounded-xl border border-line-strong bg-surface px-3.5 text-base text-fg shadow-xs outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-fg-subtle focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-70 aria-invalid:border-error-600 aria-invalid:focus:ring-error-600/15 sm:h-10 sm:text-sm dark:focus:border-brand-400 dark:focus:ring-brand-400/20 dark:aria-invalid:border-error-400;
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
