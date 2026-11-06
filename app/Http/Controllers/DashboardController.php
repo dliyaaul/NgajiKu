@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\StatusPembayaran;
 use App\Enums\StatusTagihan;
-use App\Models\Pembayaran;
 use App\Models\Tagihan;
 use App\Services\Absensi\AbsensiService;
 use App\Services\Absensi\RingkasanAbsensi;
+use App\Services\Dashboard\RingkasanDashboardAdmin;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,11 +15,21 @@ class DashboardController extends Controller
 {
     public function __construct(private RingkasanAbsensi $ringkasan) {}
 
-    public function admin(Request $request): Response
-    {
+    public function admin(
+        Request $request,
+        RingkasanDashboardAdmin $dashboard
+    ): Response {
+        $dataDashboard = $dashboard->ambil();
+
         return Inertia::render('dashboard/admin', [
+            // Statistik akademik, keuangan, dan aktivitas terbaru.
+            ...$dataDashboard,
+
+            // Ringkasan absensi yang sudah ada.
             ...$this->ringkasan->untukPengelola($request->user()),
-            'pembayaranMenunggu' => Pembayaran::query()->where('status', StatusPembayaran::MenungguVerifikasi)->count(),
+
+            // Mempertahankan kompatibilitas dengan PengingatPembayaran.
+            'pembayaranMenunggu' => $dataDashboard['keuangan']['menungguVerifikasi']['jumlah'],
         ]);
     }
 

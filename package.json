@@ -15,6 +15,7 @@
         "@types/react-dom": "^19.3.0",
         "@vitejs/plugin-react": "^6.2.1",
         "concurrently": "^10.0.3",
+        "fontaine": "^0.8.2",
         "laravel-vite-plugin": "^3.1",
         "tailwindcss": "^4.3.4",
         "typescript": "^7.0.2",
@@ -24,8 +25,10 @@
         "@laravel/multiplex": "^0.4.1"
     },
     "dependencies": {
+        "@ant-design/icons": "^6.3.4",
         "@inertiajs/react": "^3.11.0",
         "@inertiajs/vite": "^3.11.0",
+        "antd": "^6.7.0",
         "lucide-react": "^1.68.0",
         "react": "^19.3.1",
         "react-dom": "^19.3.1"

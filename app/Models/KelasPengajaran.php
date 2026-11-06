@@ -80,7 +80,7 @@ class KelasPengajaran extends Model
     {
         return $this->santriPrograms()->exists()
             || collect(AbsensiProgram::cases())->contains(
-                fn (AbsensiProgram $program) => $program->pertemuanModel()::query()->where('kelas_pengajaran_id', $this->id)->exists(),
+                fn(AbsensiProgram $program) => $program->pertemuanModel()::query()->where('kelas_pengajaran_id', $this->id)->exists(),
             );
     }
 

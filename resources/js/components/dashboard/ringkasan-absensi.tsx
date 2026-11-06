@@ -1,17 +1,36 @@
-import { Link } from '@inertiajs/react';
-import type { ReactNode } from 'react';
-import { ArrowRight, Calendar, ChevronRight, CircleCheck, ClipboardList, Clock, Lock, TrendingUp, Users } from 'lucide-react';
 
-import { Alert } from '@/components/ui/alert';
-import { Badge, ProgramBadge, ProgramIcon, StatusBadge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Icon } from '@/components/ui/icon';
-import { StatCard } from '@/components/ui/stat-card';
+import { Link } from '@inertiajs/react';
+import {
+    Alert,
+    Avatar,
+    Button,
+    Card,
+    Col,
+    Empty,
+    List,
+    Row,
+    Space,
+    Statistic,
+    Tag,
+    Typography,
+} from 'antd';
+import {
+    ArrowRightOutlined,
+    BookOutlined,
+    CalendarOutlined,
+    ClockCircleOutlined,
+    FileTextOutlined,
+    LockOutlined,
+    RiseOutlined,
+    TeamOutlined,
+} from '@ant-design/icons';
+
 import { PROGRAM } from '@/lib/program';
 import { formatTanggal, sisaWaktu } from '@/lib/utils';
 import absensi from '@/routes/absensi';
 import type { PertemuanRingkas, ProgramKey, Rekap } from '@/types';
+
+const { Text } = Typography;
 
 export interface RingkasanAbsensiProps {
     programs: Array<{ program: ProgramKey; jumlah_kelas: number }>;
@@ -25,19 +44,97 @@ export interface RingkasanAbsensiProps {
     terbaru: PertemuanRingkas[];
 }
 
-function RekapBadges({ rekap, kosong }: { rekap: Rekap; kosong: ReactNode }) {
+const WARNA_STATUS: Record<string, string> = {
+    hadir: 'success',
+    izin: 'processing',
+    sakit: 'warning',
+    alpha: 'error',
+};
+
+function RekapTags({ rekap, kosong }: { rekap: Rekap; kosong: string }) {
     const entries = Object.entries(rekap);
 
     if (entries.length === 0) {
-        return <>{kosong}</>;
+        return <Tag>{kosong}</Tag>;
     }
 
     return (
-        <>
+        <Space size={[4, 6]} wrap>
             {entries.map(([status, jumlah]) => (
-                <StatusBadge key={status} status={status} count={jumlah} />
+                <Tag
+                    key={status}
+                    color={WARNA_STATUS[status.toLowerCase()] ?? 'default'}
+                >
+                    {status}: {jumlah}
+                </Tag>
             ))}
-        </>
+        </Space>
+    );
+}
+
+function KartuStatistik({
+    judul,
+    nilai,
+    keterangan,
+    ikon,
+    warna,
+    suffix,
+}: {
+    judul: string;
+    nilai: number | string;
+    keterangan: string;
+    ikon: React.ReactNode;
+    warna: string;
+    suffix?: string;
+}) {
+    return (
+        <Card className="h-full" styles={{ body: { padding: 18 } }}>
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                    <Statistic
+                        title={judul}
+                        value={nilai}
+                        suffix={suffix}
+                        valueStyle={{
+                            color: '#101828',
+                            fontSize: 26,
+                            fontWeight: 650,
+                        }}
+                    />
+                    <Text type="secondary" className="mt-1 block text-xs">
+                        {keterangan}
+                    </Text>
+                </div>
+
+                <Avatar
+                    shape="square"
+                    size={42}
+                    style={{
+                        backgroundColor: `${warna}15`,
+                        color: warna,
+                        fontSize: 19,
+                    }}
+                >
+                    {ikon}
+                </Avatar>
+            </div>
+        </Card>
+    );
+}
+
+function IkonProgram() {
+    return (
+        <Avatar
+            shape="square"
+            size={40}
+            style={{
+                backgroundColor: '#04785715',
+                color: '#047857',
+                fontSize: 18,
+            }}
+        >
+            <BookOutlined />
+        </Avatar>
     );
 }
 
@@ -45,154 +142,309 @@ function RekapBadges({ rekap, kosong }: { rekap: Rekap; kosong: ReactNode }) {
  * Ringkasan absensi untuk dashboard admin & pengajar.
  * `cakupan`: teks "kelas Anda" / "seluruh lembaga".
  */
-export function RingkasanAbsensi({ cakupan, ...data }: RingkasanAbsensiProps & { cakupan: string }) {
-    const { gagal, rentangHari, persenHadir, terbuka, belumDiisi, terbaru } = data;
+export function RingkasanAbsensi({
+    cakupan,
+    ...data
+}: RingkasanAbsensiProps & { cakupan: string }) {
+    const {
+        gagal,
+        rentangHari,
+        persenHadir,
+        terbuka,
+        belumDiisi,
+        terbaru,
+    } = data;
 
     return (
-        <>
+        <div className="space-y-6">
             {gagal.length > 0 && (
-                <Alert tone="warning" className="mb-6">
-                    Data {gagal.join(', ')} belum dapat dimuat, sehingga angka di bawah belum lengkap. Muat ulang halaman beberapa saat lagi.
-                </Alert>
+                <Alert
+                    type="warning"
+                    showIcon
+                    message="Sebagian data absensi belum tersedia"
+                    description={`Data ${gagal.join(', ')} belum dapat dimuat, sehingga angka di bawah belum lengkap. Muat ulang halaman beberapa saat lagi.`}
+                />
             )}
 
-            {/* Angka ringkas */}
-            <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-                <StatCard label="Kelas aktif" value={data.jumlahKelas} icon={Users} hint={`Pada ${cakupan}`} />
-                <StatCard label="Pertemuan" value={data.jumlahPertemuan} icon={Calendar} tone="info" hint={`${rentangHari} hari terakhir`} />
-                <StatCard
-                    label="Kehadiran"
-                    value={persenHadir === null ? '—' : `${persenHadir}%`}
-                    icon={TrendingUp}
-                    tone="success"
-                    hint={persenHadir === null ? 'Belum ada absensi tercatat' : `Santri hadir, ${rentangHari} hari terakhir`}
-                />
-                <StatCard
-                    label="Belum diisi"
-                    value={belumDiisi}
-                    icon={ClipboardList}
-                    tone={belumDiisi > 0 ? 'warning' : 'neutral'}
-                    hint={`Dari ${terbuka.length} absensi yang masih terbuka`}
-                />
-            </div>
+            {/* Statistik absensi */}
+            <Row gutter={[16, 16]}>
+                <Col xs={12} xl={6}>
+                    <KartuStatistik
+                        judul="Kelas Aktif"
+                        nilai={data.jumlahKelas}
+                        keterangan={`Pada ${cakupan}`}
+                        ikon={<TeamOutlined />}
+                        warna="#047857"
+                    />
+                </Col>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                {/* Perlu tindakan */}
-                <Card
-                    title="Absensi masih terbuka"
-                    description="Bisa diisi atau diubah hingga 24 jam sejak pertemuan dibuat."
-                    padded={false}
-                    className="lg:col-span-2"
-                >
-                    {terbuka.length === 0 ? (
-                        <div className="flex flex-col items-center px-6 py-10 text-center">
-                            <span className="mb-3 grid size-11 place-items-center rounded-2xl bg-success-50 text-success-700 dark:bg-success-400/10 dark:text-success-300">
-                                <Icon icon={CircleCheck} className="size-5" />
-                            </span>
-                            <p className="font-semibold text-fg">Tidak ada absensi yang menunggu</p>
-                            <p className="mt-1 max-w-sm text-sm text-fg-muted">Buat pertemuan baru dari menu Absensi untuk mulai mencatat kehadiran.</p>
-                        </div>
-                    ) : (
-                        <ul className="divide-y divide-line">
-                            {terbuka.map((item) => (
-                                <li key={item.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                                    <div className="flex min-w-0 items-start gap-3">
-                                        <ProgramIcon program={item.program} size="sm" />
+                <Col xs={12} xl={6}>
+                    <KartuStatistik
+                        judul="Pertemuan"
+                        nilai={data.jumlahPertemuan}
+                        keterangan={`${rentangHari} hari terakhir`}
+                        ikon={<CalendarOutlined />}
+                        warna="#2563eb"
+                    />
+                </Col>
 
-                                        <div className="min-w-0">
-                                            <p className="truncate font-semibold text-fg">{item.kelas}</p>
-                                            <p className="text-sm text-fg-muted">
-                                                {PROGRAM[item.program].label} · {formatTanggal(item.tanggal)}
-                                            </p>
+                <Col xs={12} xl={6}>
+                    <KartuStatistik
+                        judul="Kehadiran"
+                        nilai={persenHadir === null ? '—' : persenHadir}
+                        suffix={persenHadir === null ? undefined : '%'}
+                        keterangan={
+                            persenHadir === null
+                                ? 'Belum ada absensi tercatat'
+                                : `Santri hadir, ${rentangHari} hari terakhir`
+                        }
+                        ikon={<RiseOutlined />}
+                        warna="#039855"
+                    />
+                </Col>
 
-                                            <div className="mt-2 flex flex-wrap gap-1.5">
-                                                <RekapBadges
-                                                    rekap={item.rekap}
-                                                    kosong={
-                                                        <Badge tone="warning" icon={ClipboardList}>
-                                                            Belum diisi
-                                                        </Badge>
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                <Col xs={12} xl={6}>
+                    <KartuStatistik
+                        judul="Belum Diisi"
+                        nilai={belumDiisi}
+                        keterangan={`${terbuka.length} absensi masih terbuka`}
+                        ikon={<FileTextOutlined />}
+                        warna={belumDiisi > 0 ? '#d97706' : '#667085'}
+                    />
+                </Col>
+            </Row>
 
-                                    <div className="flex shrink-0 items-center justify-between gap-3 sm:flex-col sm:items-end">
-                                        {item.batas_edit && (
-                                            <span className="inline-flex items-center gap-1 text-xs font-medium text-fg-muted">
-                                                <Icon icon={Clock} className="size-3.5" />
-                                                Terkunci {sisaWaktu(item.batas_edit)} lagi
-                                            </span>
-                                        )}
-
-                                        <Button size="sm" href={absensi.show.url({ program: item.program, pertemuan: item.id })} iconRight={ArrowRight}>
-                                            Isi Absensi
-                                        </Button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </Card>
-
-                {/* Pintasan program */}
-                <Card title="Program" padded={false}>
-                    <ul className="divide-y divide-line">
-                        {data.programs.map((row) => (
-                            <li key={row.program}>
-                                <Link
-                                    href={absensi.kelas.url(row.program)}
-                                    className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-surface-muted sm:px-6"
-                                >
-                                    <ProgramIcon program={row.program} size="sm" />
-
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block font-semibold text-fg">{PROGRAM[row.program].label}</span>
-                                        <span className="block text-sm text-fg-muted">{row.jumlah_kelas} kelas aktif</span>
-                                    </span>
-
-                                    <Icon icon={ChevronRight} className="size-5 text-fg-subtle" />
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                </Card>
-
-                {/* Riwayat singkat */}
-                {terbaru.length > 0 && (
+            {/* Absensi terbuka dan program */}
+            <Row gutter={[16, 16]} align="stretch">
+                <Col xs={24} lg={16}>
                     <Card
-                        title="Pertemuan terkunci terbaru"
-                        description={`Pertemuan dalam ${rentangHari} hari terakhir yang sudah lewat batas edit.`}
-                        padded={false}
-                        className="lg:col-span-3"
+                        title="Absensi Masih Terbuka"
+                        extra={
+                            <Tag color={terbuka.length > 0 ? 'warning' : 'success'}>
+                                {terbuka.length} pertemuan
+                            </Tag>
+                        }
+                        className="h-full"
                     >
-                        <ul className="divide-y divide-line">
-                            {terbaru.map((item) => (
-                                <li key={item.id}>
-                                    <Link
-                                        href={absensi.show.url({ program: item.program, pertemuan: item.id })}
-                                        className="flex flex-col gap-2 px-5 py-3.5 transition-colors hover:bg-surface-muted sm:flex-row sm:items-center sm:gap-4 sm:px-6"
+                        <Text type="secondary" className="mb-4 block text-sm">
+                            Absensi dapat diisi atau diubah hingga 24 jam sejak
+                            pertemuan dibuat.
+                        </Text>
+
+                        {terbuka.length === 0 ? (
+                            <Empty
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description={
+                                    <div>
+                                        <Text strong className="block">
+                                            Tidak ada absensi yang menunggu
+                                        </Text>
+                                        <Text type="secondary" className="text-sm">
+                                            Buat pertemuan baru dari menu Absensi
+                                            untuk mulai mencatat kehadiran.
+                                        </Text>
+                                    </div>
+                                }
+                            />
+                        ) : (
+                            <List
+                                dataSource={terbuka}
+                                split
+                                renderItem={(item) => (
+                                    <List.Item
+                                        key={item.id}
+                                        className="py-4!"
+                                        actions={[
+                                            <Link
+                                                key="aksi"
+                                                href={absensi.show.url({
+                                                    program: item.program,
+                                                    pertemuan: item.id,
+                                                })}
+                                            >
+                                                <Button
+                                                    type="primary"
+                                                    size="small"
+                                                    icon={<ArrowRightOutlined />}
+                                                >
+                                                    Isi Absensi
+                                                </Button>
+                                            </Link>,
+                                        ]}
                                     >
-                                        <span className="w-36 shrink-0 text-sm font-medium text-fg tabular-nums">{formatTanggal(item.tanggal)}</span>
+                                        <List.Item.Meta
+                                            avatar={
+                                                <IkonProgram />
+                                            }
+                                            title={
+                                                <Text strong>{item.kelas}</Text>
+                                            }
+                                            description={
+                                                <div className="space-y-2">
+                                                    <Text
+                                                        type="secondary"
+                                                        className="block text-xs"
+                                                    >
+                                                        {PROGRAM[item.program].label}
+                                                        {' · '}
+                                                        {formatTanggal(item.tanggal)}
+                                                    </Text>
 
-                                        <span className="flex min-w-0 flex-1 items-center gap-2">
-                                            <ProgramBadge program={item.program} />
-                                            <span className="truncate text-sm text-fg">{item.kelas}</span>
-                                        </span>
+                                                    <RekapTags
+                                                        rekap={item.rekap}
+                                                        kosong="Belum diisi"
+                                                    />
 
-                                        <span className="flex flex-wrap items-center gap-1.5">
-                                            <RekapBadges rekap={item.rekap} kosong={<Badge tone="neutral">Tidak diisi</Badge>} />
-                                            <Icon icon={Lock} className="ml-1 size-4 text-fg-subtle" />
-                                            <span className="sr-only">Terkunci</span>
-                                        </span>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
+                                                    {item.batas_edit && (
+                                                        <Text
+                                                            type="secondary"
+                                                            className="block text-xs"
+                                                        >
+                                                            <ClockCircleOutlined />{' '}
+                                                            {' Terkunci '}
+                                                            {sisaWaktu(item.batas_edit)}
+                                                            {' lagi'}
+                                                        </Text>
+                                                    )}
+                                                </div>
+                                            }
+                                        />
+                                    </List.Item>
+                                )}
+                            />
+                        )}
                     </Card>
-                )}
-            </div>
-        </>
+                </Col>
+
+                <Col xs={24} lg={8}>
+                    <Card
+                        title="Program Pembelajaran"
+                        className="h-full"
+                    >
+                        <List
+                            dataSource={data.programs}
+                            locale={{
+                                emptyText: 'Belum ada program tersedia',
+                            }}
+                            renderItem={(row) => (
+                                <List.Item
+                                    key={row.program}
+                                    className="px-0!"
+                                    actions={[
+                                        <Link
+                                            key="program"
+                                            href={absensi.kelas.url(row.program)}
+                                        >
+                                            <Button
+                                                type="text"
+                                                size="small"
+                                                icon={<ArrowRightOutlined />}
+                                            />
+                                        </Link>,
+                                    ]}
+                                >
+                                    <List.Item.Meta
+                                        avatar={
+                                            <IkonProgram />
+                                        }
+                                        title={
+                                            <Link
+                                                href={absensi.kelas.url(row.program)}
+                                                className="font-semibold"
+                                            >
+                                                {PROGRAM[row.program].label}
+                                            </Link>
+                                        }
+                                        description={
+                                            <Text type="secondary" className="text-xs">
+                                                {row.jumlah_kelas} kelas aktif
+                                            </Text>
+                                        }
+                                    />
+                                </List.Item>
+                            )}
+                        />
+                    </Card>
+                </Col>
+            </Row>
+
+            {/* Riwayat pertemuan */}
+            {terbaru.length > 0 && (
+                <Card
+                    title="Pertemuan Terkunci Terbaru"
+                    extra={
+                        <Space size={6}>
+                            <LockOutlined />
+                            <Text type="secondary" className="text-xs">
+                                Riwayat
+                            </Text>
+                        </Space>
+                    }
+                >
+                    <Text type="secondary" className="mb-4 block text-sm">
+                        Pertemuan dalam {rentangHari} hari terakhir yang sudah
+                        melewati batas waktu pengeditan.
+                    </Text>
+
+                    <List
+                        dataSource={terbaru}
+                        renderItem={(item) => (
+                            <List.Item
+                                key={item.id}
+                                className="py-3!"
+                                actions={[
+                                    <Link
+                                        key="detail"
+                                        href={absensi.show.url({
+                                            program: item.program,
+                                            pertemuan: item.id,
+                                        })}
+                                    >
+                                        <Button type="text" size="small">
+                                            Detail <ArrowRightOutlined />
+                                        </Button>
+                                    </Link>,
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={
+                                        <Avatar
+                                            shape="square"
+                                            style={{
+                                                backgroundColor: '#f2f4f7',
+                                                color: '#667085',
+                                            }}
+                                            icon={<LockOutlined />}
+                                        />
+                                    }
+                                    title={
+                                        <Space wrap size={[6, 6]}>
+                                            <Tag color="green">
+                                                {PROGRAM[item.program].label}
+                                            </Tag>
+                                            <Text strong>{item.kelas}</Text>
+                                        </Space>
+                                    }
+                                    description={
+                                        <div className="space-y-2">
+                                            <Text
+                                                type="secondary"
+                                                className="block text-xs"
+                                            >
+                                                {formatTanggal(item.tanggal)}
+                                            </Text>
+                                            <RekapTags
+                                                rekap={item.rekap}
+                                                kosong="Tidak diisi"
+                                            />
+                                        </div>
+                                    }
+                                />
+                            </List.Item>
+                        )}
+                    />
+                </Card>
+            )}
+        </div>
     );
 }
