@@ -21,6 +21,7 @@ use App\Http\Controllers\TagihanController;
 use App\Http\Controllers\TagihanSantriController;
 use App\Http\Controllers\TarifPembayaranController;
 use App\Http\Controllers\VerifikasiPembayaranController;
+use App\Http\Controllers\RekapAbsensiController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman login sudah mengarahkan pengguna yang masuk ke dashboard sesuai perannya.
@@ -86,6 +87,8 @@ Route::middleware(['auth', 'role:admin,pengajar'])
             ->name('show');
         Route::put('/{program}/pertemuan/{pertemuan}/absensi', [AbsensiPertemuanController::class, 'update'])
             ->name('update');
+        Route::get('/rekap', [RekapAbsensiController::class, 'index'])
+            ->name('rekap');
     });
 
 // Dashboard Pengajar

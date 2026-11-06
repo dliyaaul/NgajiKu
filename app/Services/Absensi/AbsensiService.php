@@ -51,7 +51,7 @@ class AbsensiService
             ->with('pengajar:id,username')
             ->whereBelongsTo($this->program($program))
             ->aktif()
-            ->when($user->isPengajar(), fn ($query) => $query->whereBelongsTo($user, 'pengajar'))
+            ->when($user->isPengajar(), fn($query) => $query->whereBelongsTo($user, 'pengajar'))
             ->orderBy('nama_kelas')
             ->get();
     }
@@ -79,7 +79,7 @@ class AbsensiService
     public function getPertemuanList(AbsensiProgram $program, KelasPengajaran $kelas): Collection
     {
         return $program->pertemuanModel()::query()
-            ->with(['pengajar:id,username', 'pengganti:id,nama', 'absensi:id,'.$program->pertemuanForeignKey().',status'])
+            ->with(['pengajar:id,username', 'pengganti:id,nama', 'absensi:id,' . $program->pertemuanForeignKey() . ',status'])
             ->whereBelongsTo($kelas)
             ->orderByDesc('tanggal')
             ->orderByDesc('created_at')
@@ -134,12 +134,12 @@ class AbsensiService
             }
 
             $pertemuanList = $program->pertemuanModel()::query()
-                ->with('absensi:id,'.$program->pertemuanForeignKey().',status')
+                ->with('absensi:id,' . $program->pertemuanForeignKey() . ',status')
                 ->whereDate('tanggal', '>=', $dari)
                 ->when(
                     $user->isPengajar(),
-                    fn ($query) => $query->whereIn('kelas_pengajaran_id', $namaKelas->keys()),
-                    fn ($query) => $query->whereBelongsTo($this->program($program)),
+                    fn($query) => $query->whereIn('kelas_pengajaran_id', $namaKelas->keys()),
+                    fn($query) => $query->whereBelongsTo($this->program($program)),
                 )
                 ->orderByDesc('tanggal')
                 ->orderByDesc('created_at')
@@ -160,7 +160,7 @@ class AbsensiService
             }
         }
 
-        usort($pertemuanItems, fn (array $a, array $b) => strcmp($b['tanggal'], $a['tanggal']));
+        usort($pertemuanItems, fn(array $a, array $b) => strcmp($b['tanggal'], $a['tanggal']));
 
         return [
             'programs' => $programs,
@@ -169,6 +169,100 @@ class AbsensiService
             'dari' => $dari,
         ];
     }
+
+
+    /**
+     * Data grafik kehadiran per tanggal untuk dashboard admin dan pengajar.
+     *
+     * Pengajar hanya melihat kelas yang diampunya.
+     *
+     * @return list<array{
+     *     tanggal: string,
+     *     jumlah_pertemuan: int,
+     *     hadir: int,
+     *     total_absensi: int,
+     *     persen_hadir: ?int
+     * }>
+     */
+    public function getGrafikDashboard(
+        User $user,
+        CarbonImmutable $dari,
+        CarbonImmutable $sampai,
+        ?AbsensiProgram $filter = null,
+    ): array {
+        $harian = [];
+
+        for ($tanggal = $dari; $tanggal->lte($sampai); $tanggal = $tanggal->addDay()) {
+            $key = $tanggal->toDateString();
+
+            $harian[$key] = [
+                'tanggal' => $key,
+                'jumlah_pertemuan' => 0,
+                'hadir' => 0,
+                'total_absensi' => 0,
+                'persen_hadir' => null,
+            ];
+        }
+
+        foreach ($filter ? [$filter] : AbsensiProgram::cases() as $program) {
+            $programModel = $this->program($program);
+
+            $kelasIds = KelasPengajaran::query()
+                ->whereBelongsTo($programModel)
+                ->when(
+                    $user->isPengajar(),
+                    fn($query) => $query->whereBelongsTo($user, 'pengajar')
+                )
+                ->pluck('id');
+
+            if ($user->isPengajar() && $kelasIds->isEmpty()) {
+                continue;
+            }
+
+            $pertemuanList = $program->pertemuanModel()::query()
+                ->with('absensi:id,' . $program->pertemuanForeignKey() . ',status')
+                ->whereBetween('tanggal', [
+                    $dari->toDateString(),
+                    $sampai->toDateString(),
+                ])
+                ->when(
+                    $user->isPengajar(),
+                    fn($query) => $query->whereIn('kelas_pengajaran_id', $kelasIds),
+                    fn($query) => $query->whereBelongsTo($programModel),
+                )
+                ->get();
+
+            foreach ($pertemuanList as $pertemuan) {
+                $tanggal = $pertemuan->tanggal->toDateString();
+
+                if (!isset($harian[$tanggal])) {
+                    continue;
+                }
+
+                $rekap = $pertemuan->rekap();
+
+                $jumlahHadir = (int) ($rekap['Hadir'] ?? 0);
+                $jumlahAbsensi = array_sum($rekap);
+
+                $harian[$tanggal]['jumlah_pertemuan']++;
+                $harian[$tanggal]['hadir'] += $jumlahHadir;
+                $harian[$tanggal]['total_absensi'] += $jumlahAbsensi;
+            }
+        }
+
+        foreach ($harian as &$item) {
+            $item['persen_hadir'] = $item['total_absensi'] > 0
+                ? (int) round(
+                    $item['hadir'] / $item['total_absensi'] * 100
+                )
+                : null;
+        }
+
+        unset($item);
+
+        return array_values($harian);
+    }
+
 
     /**
      * @param  array{tanggal: string, pengajar_id: ?string, pengganti_id: ?string, materi_pembelajaran: ?string, metode: string}  $data
@@ -189,7 +283,7 @@ class AbsensiService
     {
         $this->ensureEditable($pertemuan);
 
-        $this->tanpaDuplikatTahfidz(fn () => DB::transaction(function () use ($program, $pertemuan, $data) {
+        $this->tanpaDuplikatTahfidz(fn() => DB::transaction(function () use ($program, $pertemuan, $data) {
             $tanggalBerubah = $pertemuan->tanggal->toDateString() !== $data['tanggal'];
 
             $pertemuan->update($this->pertemuanPayload($program, $data));
@@ -222,7 +316,7 @@ class AbsensiService
             ->whereBelongsTo($this->program($program))
             ->get()
             ->unique('pengajar_id')
-            ->map(fn (PengajarProgram $row) => ['id' => $row->pengajar_id, 'nama' => $row->pengajar?->username ?? 'Tanpa nama'])
+            ->map(fn(PengajarProgram $row) => ['id' => $row->pengajar_id, 'nama' => $row->pengajar?->username ?? 'Tanpa nama'])
             ->sortBy('nama', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
@@ -237,7 +331,7 @@ class AbsensiService
             ->aktif()
             ->orderBy('nama')
             ->get(['id', 'nama'])
-            ->map(fn (PengajarPengganti $pengganti) => ['id' => $pengganti->id, 'nama' => $pengganti->nama])
+            ->map(fn(PengajarPengganti $pengganti) => ['id' => $pengganti->id, 'nama' => $pengganti->nama])
             ->all();
     }
 
@@ -307,7 +401,7 @@ class AbsensiService
             throw new AbsensiException('Ada santri yang bukan anggota kelas ini. Muat ulang halaman lalu coba lagi.');
         }
 
-        $this->tanpaDuplikatTahfidz(fn () => DB::transaction(function () use ($program, $pertemuan, $rows, $user) {
+        $this->tanpaDuplikatTahfidz(fn() => DB::transaction(function () use ($program, $pertemuan, $rows, $user) {
             $existing = $pertemuan->absensi()->lockForUpdate()->get()->keyBy('santri_program_id');
 
             foreach ($rows as $row) {
@@ -465,7 +559,7 @@ class AbsensiService
                 ->with('pertemuan.pengajar:id,username')
                 ->whereIn('santri_program_id', $santriProgramIds)
                 // Absensi kegiatan PTL di tabel `absensi` tidak punya pertemuan.
-                ->when($program === AbsensiProgram::Bbaq, fn ($query) => $query->whereNotNull($foreignKey))
+                ->when($program === AbsensiProgram::Bbaq, fn($query) => $query->whereNotNull($foreignKey))
                 ->get();
 
             foreach ($rows as $row) {
@@ -487,7 +581,7 @@ class AbsensiService
             }
         }
 
-        usort($items, fn (array $a, array $b) => strcmp((string) $b['tanggal'], (string) $a['tanggal']));
+        usort($items, fn(array $a, array $b) => strcmp((string) $b['tanggal'], (string) $a['tanggal']));
 
         return ['items' => $items, 'gagal' => []];
     }

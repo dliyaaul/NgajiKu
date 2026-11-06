@@ -1,5 +1,4 @@
-
-import { Link } from '@inertiajs/react';
+import { Link } from "@inertiajs/react";
 import {
     Alert,
     Avatar,
@@ -13,7 +12,7 @@ import {
     Statistic,
     Tag,
     Typography,
-} from 'antd';
+} from "antd";
 import {
     ArrowRightOutlined,
     BookOutlined,
@@ -23,17 +22,26 @@ import {
     LockOutlined,
     RiseOutlined,
     TeamOutlined,
-} from '@ant-design/icons';
+} from "@ant-design/icons";
 
-import { PROGRAM } from '@/lib/program';
-import { formatTanggal, sisaWaktu } from '@/lib/utils';
-import absensi from '@/routes/absensi';
-import type { PertemuanRingkas, ProgramKey, Rekap } from '@/types';
+import { PROGRAM } from "@/lib/program";
+import { formatTanggal, sisaWaktu } from "@/lib/utils";
+import absensi from "@/routes/absensi";
+import type { PertemuanRingkas, ProgramKey, Rekap } from "@/types";
+
+import { GrafikAbsensi } from "@/components/dashboard/grafik-absensi";
+import type {
+    GrafikAbsensiItem,
+    FilterGrafik,
+} from "@/components/dashboard/grafik-absensi";
 
 const { Text } = Typography;
 
 export interface RingkasanAbsensiProps {
-    programs: Array<{ program: ProgramKey; jumlah_kelas: number }>;
+    programs: Array<{
+        program: ProgramKey;
+        jumlah_kelas: number;
+    }>;
     gagal: string[];
     rentangHari: number;
     jumlahKelas: number;
@@ -42,13 +50,15 @@ export interface RingkasanAbsensiProps {
     terbuka: PertemuanRingkas[];
     belumDiisi: number;
     terbaru: PertemuanRingkas[];
+    grafikAbsensi: GrafikAbsensiItem[];
+    filterGrafik: FilterGrafik;
 }
 
 const WARNA_STATUS: Record<string, string> = {
-    hadir: 'success',
-    izin: 'processing',
-    sakit: 'warning',
-    alpha: 'error',
+    hadir: "success",
+    izin: "processing",
+    sakit: "warning",
+    alpha: "error",
 };
 
 function RekapTags({ rekap, kosong }: { rekap: Rekap; kosong: string }) {
@@ -63,7 +73,7 @@ function RekapTags({ rekap, kosong }: { rekap: Rekap; kosong: string }) {
             {entries.map(([status, jumlah]) => (
                 <Tag
                     key={status}
-                    color={WARNA_STATUS[status.toLowerCase()] ?? 'default'}
+                    color={WARNA_STATUS[status.toLowerCase()] ?? "default"}
                 >
                     {status}: {jumlah}
                 </Tag>
@@ -88,7 +98,14 @@ function KartuStatistik({
     suffix?: string;
 }) {
     return (
-        <Card className="h-full" styles={{ body: { padding: 18 } }}>
+        <Card
+            className="h-full"
+            styles={{
+                body: {
+                    padding: 18,
+                },
+            }}
+        >
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                     <Statistic
@@ -96,11 +113,12 @@ function KartuStatistik({
                         value={nilai}
                         suffix={suffix}
                         valueStyle={{
-                            color: '#101828',
+                            color: "#101828",
                             fontSize: 26,
                             fontWeight: 650,
                         }}
                     />
+
                     <Text type="secondary" className="mt-1 block text-xs">
                         {keterangan}
                     </Text>
@@ -128,13 +146,96 @@ function IkonProgram() {
             shape="square"
             size={40}
             style={{
-                backgroundColor: '#04785715',
-                color: '#047857',
+                backgroundColor: "#04785715",
+                color: "#047857",
                 fontSize: 18,
             }}
         >
             <BookOutlined />
         </Avatar>
+    );
+}
+
+function PanelRekapAbsensi({ filter }: { filter: FilterGrafik }) {
+    const periodeMulai = formatTanggal(filter.mulai);
+    const periodeSampai = formatTanggal(filter.sampai);
+
+    const namaProgram = filter.program
+        ? PROGRAM[filter.program].label
+        : "Semua Program";
+
+    const parameterRekap = new URLSearchParams({
+        mulai: filter.mulai,
+        sampai: filter.sampai,
+        program: filter.program ?? "",
+    });
+
+    return (
+        <Card
+            className="h-full"
+            title={
+                <Space size={8}>
+                    <FileTextOutlined
+                        style={{
+                            color: "#059669",
+                        }}
+                    />
+                    <span>Rekap Absensi</span>
+                </Space>
+            }
+            extra={<Tag color="success">Laporan</Tag>}
+        >
+            <div className="flex h-full flex-col">
+                <div className="mb-5">
+                    <Text type="secondary" className="block text-sm">
+                        Lihat laporan kehadiran santri berdasarkan program,
+                        kelas, dan periode pembelajaran.
+                    </Text>
+                </div>
+
+                <div className="mb-5 space-y-3 rounded-xl bg-gray-50 p-4">
+                    <div>
+                        <Text type="secondary" className="mb-1 block text-xs">
+                            Periode laporan
+                        </Text>
+
+                        <Text strong className="text-sm">
+                            {periodeMulai} – {periodeSampai}
+                        </Text>
+                    </div>
+
+                    <div>
+                        <Text type="secondary" className="mb-1 block text-xs">
+                            Program
+                        </Text>
+
+                        <Text strong className="text-sm">
+                            {namaProgram}
+                        </Text>
+                    </div>
+                </div>
+
+                <div className="mt-auto">
+                    <Link href={`/absensi/rekap?${parameterRekap.toString()}`}>
+                        <Button
+                            type="primary"
+                            icon={<FileTextOutlined />}
+                            block
+                            size="large"
+                        >
+                            Lihat Rekap Absensi
+                        </Button>
+                    </Link>
+
+                    <Text
+                        type="secondary"
+                        className="mt-3 block text-center text-xs"
+                    >
+                        Lihat detail dan analisis kehadiran santri
+                    </Text>
+                </div>
+            </div>
+        </Card>
     );
 }
 
@@ -145,7 +246,9 @@ function IkonProgram() {
 export function RingkasanAbsensi({
     cakupan,
     ...data
-}: RingkasanAbsensiProps & { cakupan: string }) {
+}: RingkasanAbsensiProps & {
+    cakupan: string;
+}) {
     const {
         gagal,
         rentangHari,
@@ -153,16 +256,19 @@ export function RingkasanAbsensi({
         terbuka,
         belumDiisi,
         terbaru,
+        grafikAbsensi,
+        filterGrafik,
     } = data;
 
     return (
         <div className="space-y-6">
+            {/* Peringatan data */}
             {gagal.length > 0 && (
                 <Alert
                     type="warning"
                     showIcon
                     message="Sebagian data absensi belum tersedia"
-                    description={`Data ${gagal.join(', ')} belum dapat dimuat, sehingga angka di bawah belum lengkap. Muat ulang halaman beberapa saat lagi.`}
+                    description={`Data ${gagal.join(", ")} belum dapat dimuat, sehingga angka di bawah belum lengkap. Muat ulang halaman beberapa saat lagi.`}
                 />
             )}
 
@@ -191,11 +297,11 @@ export function RingkasanAbsensi({
                 <Col xs={12} xl={6}>
                     <KartuStatistik
                         judul="Kehadiran"
-                        nilai={persenHadir === null ? '—' : persenHadir}
-                        suffix={persenHadir === null ? undefined : '%'}
+                        nilai={persenHadir === null ? "—" : persenHadir}
+                        suffix={persenHadir === null ? undefined : "%"}
                         keterangan={
                             persenHadir === null
-                                ? 'Belum ada absensi tercatat'
+                                ? "Belum ada absensi tercatat"
                                 : `Santri hadir, ${rentangHari} hari terakhir`
                         }
                         ikon={<RiseOutlined />}
@@ -209,18 +315,33 @@ export function RingkasanAbsensi({
                         nilai={belumDiisi}
                         keterangan={`${terbuka.length} absensi masih terbuka`}
                         ikon={<FileTextOutlined />}
-                        warna={belumDiisi > 0 ? '#d97706' : '#667085'}
+                        warna={belumDiisi > 0 ? "#d97706" : "#667085"}
                     />
                 </Col>
             </Row>
 
-            {/* Absensi terbuka dan program */}
+            {/* Grafik dan panel rekap absensi */}
+            <Row gutter={[16, 16]} align="stretch">
+                <Col xs={24} xl={17}>
+                    <GrafikAbsensi data={grafikAbsensi} filter={filterGrafik} />
+                </Col>
+
+                <Col xs={24} xl={7}>
+                    <PanelRekapAbsensi filter={filterGrafik} />
+                </Col>
+            </Row>
+
+            {/* Absensi terbuka dan program pembelajaran */}
             <Row gutter={[16, 16]} align="stretch">
                 <Col xs={24} lg={16}>
                     <Card
                         title="Absensi Masih Terbuka"
                         extra={
-                            <Tag color={terbuka.length > 0 ? 'warning' : 'success'}>
+                            <Tag
+                                color={
+                                    terbuka.length > 0 ? "warning" : "success"
+                                }
+                            >
                                 {terbuka.length} pertemuan
                             </Tag>
                         }
@@ -239,9 +360,14 @@ export function RingkasanAbsensi({
                                         <Text strong className="block">
                                             Tidak ada absensi yang menunggu
                                         </Text>
-                                        <Text type="secondary" className="text-sm">
-                                            Buat pertemuan baru dari menu Absensi
-                                            untuk mulai mencatat kehadiran.
+
+                                        <Text
+                                            type="secondary"
+                                            className="text-sm"
+                                        >
+                                            Buat pertemuan baru dari menu
+                                            Absensi untuk mulai mencatat
+                                            kehadiran.
                                         </Text>
                                     </div>
                                 }
@@ -265,7 +391,9 @@ export function RingkasanAbsensi({
                                                 <Button
                                                     type="primary"
                                                     size="small"
-                                                    icon={<ArrowRightOutlined />}
+                                                    icon={
+                                                        <ArrowRightOutlined />
+                                                    }
                                                 >
                                                     Isi Absensi
                                                 </Button>
@@ -273,9 +401,7 @@ export function RingkasanAbsensi({
                                         ]}
                                     >
                                         <List.Item.Meta
-                                            avatar={
-                                                <IkonProgram />
-                                            }
+                                            avatar={<IkonProgram />}
                                             title={
                                                 <Text strong>{item.kelas}</Text>
                                             }
@@ -285,9 +411,15 @@ export function RingkasanAbsensi({
                                                         type="secondary"
                                                         className="block text-xs"
                                                     >
-                                                        {PROGRAM[item.program].label}
-                                                        {' · '}
-                                                        {formatTanggal(item.tanggal)}
+                                                        {
+                                                            PROGRAM[
+                                                                item.program
+                                                            ].label
+                                                        }
+                                                        {" · "}
+                                                        {formatTanggal(
+                                                            item.tanggal,
+                                                        )}
                                                     </Text>
 
                                                     <RekapTags
@@ -300,10 +432,12 @@ export function RingkasanAbsensi({
                                                             type="secondary"
                                                             className="block text-xs"
                                                         >
-                                                            <ClockCircleOutlined />{' '}
-                                                            {' Terkunci '}
-                                                            {sisaWaktu(item.batas_edit)}
-                                                            {' lagi'}
+                                                            <ClockCircleOutlined />
+                                                            {" Terkunci "}
+                                                            {sisaWaktu(
+                                                                item.batas_edit,
+                                                            )}
+                                                            {" lagi"}
                                                         </Text>
                                                     )}
                                                 </div>
@@ -317,14 +451,11 @@ export function RingkasanAbsensi({
                 </Col>
 
                 <Col xs={24} lg={8}>
-                    <Card
-                        title="Program Pembelajaran"
-                        className="h-full"
-                    >
+                    <Card title="Program Pembelajaran" className="h-full">
                         <List
                             dataSource={data.programs}
                             locale={{
-                                emptyText: 'Belum ada program tersedia',
+                                emptyText: "Belum ada program tersedia",
                             }}
                             renderItem={(row) => (
                                 <List.Item
@@ -333,7 +464,9 @@ export function RingkasanAbsensi({
                                     actions={[
                                         <Link
                                             key="program"
-                                            href={absensi.kelas.url(row.program)}
+                                            href={absensi.kelas.url(
+                                                row.program,
+                                            )}
                                         >
                                             <Button
                                                 type="text"
@@ -344,19 +477,22 @@ export function RingkasanAbsensi({
                                     ]}
                                 >
                                     <List.Item.Meta
-                                        avatar={
-                                            <IkonProgram />
-                                        }
+                                        avatar={<IkonProgram />}
                                         title={
                                             <Link
-                                                href={absensi.kelas.url(row.program)}
+                                                href={absensi.kelas.url(
+                                                    row.program,
+                                                )}
                                                 className="font-semibold"
                                             >
                                                 {PROGRAM[row.program].label}
                                             </Link>
                                         }
                                         description={
-                                            <Text type="secondary" className="text-xs">
+                                            <Text
+                                                type="secondary"
+                                                className="text-xs"
+                                            >
                                                 {row.jumlah_kelas} kelas aktif
                                             </Text>
                                         }
@@ -411,8 +547,8 @@ export function RingkasanAbsensi({
                                         <Avatar
                                             shape="square"
                                             style={{
-                                                backgroundColor: '#f2f4f7',
-                                                color: '#667085',
+                                                backgroundColor: "#f2f4f7",
+                                                color: "#667085",
                                             }}
                                             icon={<LockOutlined />}
                                         />
@@ -422,6 +558,7 @@ export function RingkasanAbsensi({
                                             <Tag color="green">
                                                 {PROGRAM[item.program].label}
                                             </Tag>
+
                                             <Text strong>{item.kelas}</Text>
                                         </Space>
                                     }
@@ -433,6 +570,7 @@ export function RingkasanAbsensi({
                                             >
                                                 {formatTanggal(item.tanggal)}
                                             </Text>
+
                                             <RekapTags
                                                 rekap={item.rekap}
                                                 kosong="Tidak diisi"

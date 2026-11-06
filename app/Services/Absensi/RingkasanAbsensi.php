@@ -3,6 +3,7 @@
 namespace App\Services\Absensi;
 
 use App\Models\User;
+use Carbon\CarbonImmutable;
 
 /**
  * Angka ringkas dashboard (web & API): untuk admin/pengajar dari pertemuan
@@ -23,10 +24,24 @@ class RingkasanAbsensi
      *
      * @return array<string, mixed>
      */
-    public function untukPengelola(User $user): array
-    {
+    public function untukPengelola(
+        User $user,
+        ?CarbonImmutable $mulai = null,
+        ?CarbonImmutable $sampai = null,
+        ?AbsensiProgram $filterProgram = null,
+    ): array {
+        $sampai ??= CarbonImmutable::today();
+        $mulai ??= $sampai->subDays(29);
+
+        $grafik = $this->absensi->getGrafikDashboard(
+            $user,
+            $mulai,
+            $sampai,
+            $filterProgram,
+        );
+
         $data = $this->absensi->getRingkasanDashboard($user, self::RENTANG_HARI);
-        $pertemuan = collect($data['pertemuan'])->map(fn (array $item): array => [
+        $pertemuan = collect($data['pertemuan'])->map(fn(array $item): array => [
             ...$item,
             'batas_edit' => $item['batas_edit']?->toIso8601String(),
         ]);
@@ -53,6 +68,13 @@ class RingkasanAbsensi
             'terbuka' => $terbuka,
             'belumDiisi' => $terbuka->where('rekap', [])->count(),
             'terbaru' => $pertemuan->where('editable', false)->take(6)->values(),
+            'grafikAbsensi' => $grafik,
+
+            'filterGrafik' => [
+                'mulai' => $mulai->toDateString(),
+                'sampai' => $sampai->toDateString(),
+                'program' => $filterProgram?->value,
+            ],
         ];
     }
 
@@ -67,7 +89,7 @@ class RingkasanAbsensi
         return [
             'ringkasan' => $ringkasan,
             'persenHadir' => $this->persen($ringkasan['Hadir'], array_sum($ringkasan)),
-            'setoranTerakhir' => collect($items)->first(fn (array $item) => filled($item['surat'])),
+            'setoranTerakhir' => collect($items)->first(fn(array $item) => filled($item['surat'])),
             'terbaru' => array_slice($items, 0, 5),
         ];
     }
